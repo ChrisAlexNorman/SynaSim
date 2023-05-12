@@ -3,16 +3,20 @@ from itertools import combinations
 import json
 import jsbeautifier
 from scipy.integrate import odeint
+import multiprocessing
+from functools import partial
+from timeit import default_timer
 
 class MarkovModel:
 
-    def __init__(self, rate_constants=np.array([0]), stim_dependence=np.array([0]), initial_condition=np.array([1]), metadata={}):
+    def __init__(self, rate_constants=np.array([0]), stim_dependence=np.array([0]), initial_condition=np.array([1]), metadata={}, multiprocessing=True):
         self.rate_constants = rate_constants
+        self.n_states = self.rate_constants.shape[0]
         self.stim_dependence = stim_dependence
         self.initial_condition = initial_condition
-        self.n_states = self.rate_constants.shape[0]
         self.metadata = self._validate_metadata(metadata)
         self.simulations = []
+        self.multiprocessing = multiprocessing
 
     def __str__(self):
         return self.metadata['name'] + f": {self.n_states}-state Markov chain"
@@ -30,11 +34,6 @@ class MarkovModel:
         if 'state_names' not in metadata:
             metadata['state_names'] = ['S'+str(n) for n in range(0,self.n_states)]
         return metadata
-    
-    def _clear_simulations(self):
-        simulations = self.simulations
-        self.simulations = []
-        return simulations
 
     def _update_q_matrix(self, stimulus_t, rates_q=None):
         if rates_q is None:
@@ -47,6 +46,11 @@ class MarkovModel:
         """Return dp/dt at time t for time-dependent transition rates"""
         rates_q = self._update_q_matrix(np.interp(t, time, stimulus))
         return np.dot(p, rates_q)
+    
+    def clear_simulations(self):
+        simulations = self.simulations
+        self.simulations = []
+        return simulations
 
     def get_sim_type(self, simulation):
         sim_type = 'UNKNOWN'
@@ -68,15 +72,15 @@ class MarkovModel:
         """Run each simulation in simulations."""
 
         for simulation in simulations:
+            timer_start = default_timer()
 
             sim_type, sim_desc = self.get_sim_type(simulation)
-
             assert sim_type != 'UNKNOWN', sim_desc
-
             time = simulation[0]
             stimulus = simulation[1]
-
+            
             if sim_type == 'constant':
+                n_processes = 1
                 if len(simulation) > 2:
                     n_points = simulation[2]
                 else:
@@ -84,20 +88,36 @@ class MarkovModel:
                 states = self.simulate_ode_constant(time[0], stimulus[0], n_points)
             
             elif sim_type == '1d_timeseries':
+                n_processes = 1
                 states = self.simulate_ode_trace(time, stimulus)
             
             elif sim_type == '3d_timeseries':
                 states = np.zeros((np.shape(stimulus)[0], self.n_states, np.shape(stimulus)[1], np.shape(stimulus)[2]))
-                for row_idx in range(0,np.shape(stimulus[0])[0]):
-                    for col_idx in range(0,np.shape(stimulus[0])[1]):
-                        states[:, :, row_idx, col_idx] = self.simulate_ode_trace(time, stimulus[:, row_idx, col_idx])
-
+                if self.multiprocessing:
+                    with multiprocessing.Pool() as pool:
+                        n_processes = pool._processes
+                        results = []
+                        for row_idx in range(0,np.shape(stimulus[0])[0]):
+                            for col_idx in range(0,np.shape(stimulus[0])[1]):
+                                result = pool.apply_async(self.simulate_ode_trace, args=(time, stimulus[:, row_idx, col_idx]))
+                                results.append((row_idx, col_idx, result))
+                        for row_idx, col_idx, result in results:
+                            states[:, :, row_idx, col_idx] = result.get()
+                else:
+                    n_processes = 1
+                    for row_idx in range(0,np.shape(stimulus[0])[0]):
+                        for col_idx in range(0,np.shape(stimulus[0])[1]):
+                            states[:, :, row_idx, col_idx] = self.simulate_ode_trace(time, stimulus[:, row_idx, col_idx])
+            
+            sim_time = default_timer() - timer_start
             self.simulations.append({\
             'type': sim_type,\
             'description': sim_desc,\
             'simulation': simulation,\
             'time': time,\
-            'states': states
+            'states': states,\
+            'n_processes': n_processes,\
+            'sim_time': sim_time
             })
 
     def simulate_ode_trace(self, time, stimulus):
