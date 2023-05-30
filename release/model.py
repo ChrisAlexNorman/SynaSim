@@ -3,8 +3,7 @@ from itertools import combinations
 import json
 import jsbeautifier
 from scipy.integrate import odeint
-import multiprocessing
-from functools import partial
+import multiprocessing as mp
 from timeit import default_timer
 
 class MarkovModel:
@@ -94,11 +93,11 @@ class MarkovModel:
             elif sim_type == '3d_timeseries':
                 states = np.zeros((np.shape(stimulus)[0], self.n_states, np.shape(stimulus)[1], np.shape(stimulus)[2]))
                 if self.multiprocessing:
-                    with multiprocessing.Pool() as pool:
+                    with mp.Pool() as pool:
                         n_processes = pool._processes
                         results = []
-                        for row_idx in range(0,np.shape(stimulus[0])[0]):
-                            for col_idx in range(0,np.shape(stimulus[0])[1]):
+                        for row_idx in range(0, np.shape(stimulus[0])[0]):
+                            for col_idx in range(0, np.shape(stimulus[0])[1]):
                                 result = pool.apply_async(self.simulate_ode_trace, args=(time, stimulus[:, row_idx, col_idx]))
                                 results.append((row_idx, col_idx, result))
                         for row_idx, col_idx, result in results:
@@ -110,15 +109,17 @@ class MarkovModel:
                             states[:, :, row_idx, col_idx] = self.simulate_ode_trace(time, stimulus[:, row_idx, col_idx])
             
             sim_time = default_timer() - timer_start
-            self.simulations.append({\
-            'type': sim_type,\
-            'description': sim_desc,\
-            'simulation': simulation,\
-            'time': time,\
-            'states': states,\
-            'n_processes': n_processes,\
-            'sim_time': sim_time
+            self.simulations.append({
+                'type': sim_type,
+                'description': sim_desc,
+                'simulation': simulation,
+                'time': time,
+                'states': states,
+                'n_processes': n_processes,
+                'sim_time': sim_time
             })
+            
+        return self.simulations
 
     def simulate_ode_trace(self, time, stimulus):
         """Simulate deterministic ODE model under a given simulation"""
