@@ -136,7 +136,6 @@ class MarkovModel:
 
 def export_model(data, filename):
     """Saves data dictionary in JSON format"""
-
     opts = jsbeautifier.default_options()
     opts.indent_size = 2
     data_beaut = jsbeautifier.beautify(json.dumps(data), opts)
@@ -148,18 +147,27 @@ def open_model(filename):
         data = json.load(file)
     return data
 
-def validate_model(data):
+def parse_rate_constants(data):
+    if isinstance(data['rate_constants'], str):
+        assert 'parameters' in data, f"'rate_constants' is a str with no parameter dictionary."
+        param_vals = {key: value[0] if isinstance(value, list) else value for key, value in data['parameters'].items()}
+        data['rate_constants'] = eval(data['rate_constants'], param_vals)
+    return data
+    
+def parse_model(data):
     """Verify that all elements required for model specification are present"""
 
     required_keys = ['rate_constants','stim_dependence','initial_condition']
     
     for key in required_keys:
         assert key in data, f"KeyError: {key} must be provided with model specification."
+
+    data = parse_rate_constants(data)
     
     for key in required_keys:
         data[key] = np.asarray(data[key])
     
-    for key in ['rate_constants','stim_dependence']:
+    for key in ['rate_constants', 'stim_dependence']:
         assert data[key].ndim == 2 and data[key].shape[0] == data[key].shape[1],\
             f"ValueError: {key} is not square. Shape is {data[key].shape}."
     
@@ -174,10 +182,6 @@ def validate_model(data):
 
 def import_model(filename):
     """Imports data from JSON file into a MarkovModel object"""
-
-    data = validate_model(open_model(filename))
+    data = parse_model(open_model(filename))
     metadata = {key: value for key, value in data.items() if key not in ['rate_constants','stim_dependence','initial_condition']}
-    model = MarkovModel(rate_constants=data['rate_constants'], stim_dependence=data['stim_dependence'], initial_condition=data['initial_condition'], metadata=metadata)
-    
-    return model
-
+    return MarkovModel(rate_constants=data['rate_constants'], stim_dependence=data['stim_dependence'], initial_condition=data['initial_condition'], metadata=metadata)
