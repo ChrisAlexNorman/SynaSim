@@ -1,0 +1,82 @@
+{
+  "name": "CaV2.2",
+  "rates": [
+    [0, "a1*exp(V/k1)", 0, 0, 0, 0],
+    ["b1*exp(-V/k1)", 0, "a2*exp(V/k2)", 0, 0, 0],
+    [0, "b2*exp(-V/k2)", 0, "a3*exp(V/k3)", 0, 0],
+    [0, 0, "b3*exp(-V/k3)", 0, "a4*exp(V/k4)", 0],
+    [0, 0, 0, "b4*exp(-V/k4)", 0, "a"],
+    [0, 0, 0, 0, "b", 0]
+  ],
+  "parameters": {
+    "a1": {
+      "value": 4.29,
+      "units": "1/ms"
+    },
+    "a2": {
+      "value": 5.24,
+      "units": "1/ms"
+    },
+    "a3": {
+      "value": 4.98,
+      "units": "1/ms"
+    },
+    "a4": {
+      "value": 772.63,
+      "units": "1/ms"
+    },
+    "a": {
+      "value": 615.01,
+      "units": "1/ms"
+    },
+    "b1": {
+      "value": 5.23,
+      "units": "1/ms"
+    },
+    "b2": {
+      "value": 6.63,
+      "units": "1/ms"
+    },
+    "b3": {
+      "value": 73.89,
+      "units": "1/ms"
+    },
+    "b4": {
+      "value": 692.18,
+      "units": "1/ms"
+    },
+    "b": {
+      "value": 7.68,
+      "units": "1/ms"
+    },
+    "k1": {
+      "value": 68.75,
+      "units": "mV"
+    },
+    "k2": {
+      "value": 39.53,
+      "units": "mV"
+    },
+    "k3": {
+      "value": 281.62,
+      "units": "mV"
+    },
+    "k4": {
+      "value": 18.46,
+      "units": "mV"
+    }
+  },
+  "initial_condition": [1, 0, 0, 0, 0, 0],
+  "conductive": [0, 0, 0, 0, 0, 1],
+  "stimuli": {
+    "V": {
+      "time": [],
+      "stim": [],
+      "time_units": "ms",
+      "stim_units": "mV"
+    }
+  },
+  "state_names": ["C0", "C1", "C2", "C3", "C4", "O"],
+  "reference": "L. Li, J. Bischofberger, and P. Jonas, \u201cDifferential Gating and Recruitment of P/Q-, N-, and R-Type Ca2+ Channels in Hippocampal Mossy Fiber Boutons,\u201d en, J. Neurosci., vol. 27, no. 49, pp. 13 420\u201313 429, Dec. 2007, issn: 0270-6474, 1529-2401.",
+  "doi": "https://doi.org/10.1523/JNEUROSCI.1709-07.2007"
+}
