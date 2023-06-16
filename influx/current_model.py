@@ -10,7 +10,7 @@ class MarkovModel:
         self.rates = rates
         self.parameters = parameters
         self.parameter_values = {name: info['value'] for name, info in parameters.items()}
-        self.n_states = self.rates.shape[0]
+        self.n_states = len(rates)
         self.initial_condition = initial_condition
         self.metadata = self._validate_metadata(metadata)
         self.simulations = []
@@ -75,7 +75,8 @@ def validate_model(data):
     """Verify that all elements required for model specification are present"""
     for key in ['rates', 'parameters', 'initial_condition']:
         assert key in data, f"KeyError: {key} must be provided with model specification."
-    assert data['rates'].ndim == 2 and data['rates'].shape[0] == data['rates'].shape[1], f"ValueError: {key} is not square. Shape is {data[key].shape}."
+    rates_shape = np.shape(data['rates'])
+    assert len(rates_shape) == 2 and rates_shape[0] == rates_shape[1], f"ValueError: rates is not square. Shape is {rates_shape}."
     assert len(data['rates']) == len(data['initial_condition']), f"Rate matrix describes {len(data['rates'])} states but initial condition specifies {len(data['initial_condition'])}"
     return data
 
