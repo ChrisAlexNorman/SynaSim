@@ -367,7 +367,11 @@ def plot_channel_locations(df, channel_rad=5, az_rad=0, clusters=[]):
 
     layout = go.Layout(title='Channel Locations', showlegend=True,
                        width=600, height=600,
+                       plot_bgcolor='white',
                        xaxis={'showgrid' : False, 'zeroline' : False, 'title' : 'x (um)'},
                        yaxis={'showgrid' : False, 'zeroline' : False, 'title' : 'y (um)'})
-    return go.Figure(data=traces, layout=layout)
+    fig = go.Figure(data=traces, layout=layout)
+    fig.update_xaxes(ticks='outside', linecolor='black')
+    fig.update_yaxes(ticks='outside', linecolor='black')
+    return fig
     
