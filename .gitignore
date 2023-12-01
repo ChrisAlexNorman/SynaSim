@@ -1,7 +1,6 @@
 .venv/
 .DS_Store
 __pycache__/
-module_3_sv_fusion.ipynb
 process.py
 template.ipynb
 validation.ipynb
